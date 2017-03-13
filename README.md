@@ -1,7 +1,7 @@
 # gen-HyBR
 This repository contains MATLAB files for generalized hybrid iterative methods.  The codes accompany the paper: 
 
-"Generalized Hybrid Iterative Methods for Large-Scale Bayesian Inverse Problems" - Chung and Saibaba, SISC, 2017
+"Generalized Hybrid Iterative Methods for Large-Scale Bayesian Inverse Problems" - Chung and Saibaba, SIAM Journal on Scientific Computing, 2017
 
 # Requirements
 These codes require the following packages:

@@ -61,7 +61,7 @@ function [x_out, output] = genHyBR(A, b, Q, R, options)
 %            Enrm - relative error norms (requires x_true)
 %            Rnrm - relative residual norms
 %            Xnrm - relative solution norms
-%             U,V - genGK basis vectors
+%            U,QV - U and V are genGK basis vectors and Q is from the prior
 %               B - bidiagonal matrix from genGK
 %            flag - a flag that describes the output/stopping condition:
 %                       1 - flat GCV curve
@@ -83,7 +83,7 @@ function [x_out, output] = genHyBR(A, b, Q, R, options)
 %       Large-Scale Bayesian Inverse Problems", submitted 2016
 %
 % J.Chung and J. Nagy 3/2007
-% J. Chung and A. Saibaba, modified for gen-HyBR 2017
+% J. Chung and A. Saibaba, modified 1/2016
 
 %% Initialization
 defaultopt = struct('InSolv','tikhonov','RegPar','wgcv','nLevel', 'est',...
@@ -164,7 +164,7 @@ if outputparams
   output.Rnrm = ones(maxiter,1);
   output.Xnrm = ones(maxiter,1);
   output.U = [];
-  output.V = [];
+  output.QV = [];
   output.B = [];
   output.flag = 3;
   output.alpha = 0;
@@ -183,12 +183,12 @@ switch solver
     solverhandle = @Tikhonovsolver;
 end
 %% Main Code Begins Here
-B = []; V = []; GCV = []; Omega= []; x_out = []; Alpha = [];
+B = []; V = []; QV = []; GCV = []; Omega= []; x_out = []; Alpha = [];
 insolve = 'none'; terminate = 1; warning = 0; norma = 0; normr = beta;
 h = waitbar(0, 'Beginning iterations: please wait ...');
 
 for i = 1:maxiter+1 %Iteration (i=1) is just an initialization
-  [U, B, V] = feval(GKhandle, A, Q, R, U, B, V, options);
+  [U, B, V, QV] = feval(GKhandle, A, Q, R, U, B, V, QV, options);
   vector = (beta*eye(size(B,2)+1,1));
   
   if i >= 2 %Begin GK iterations
@@ -205,7 +205,7 @@ for i = 1:maxiter+1 %Iteration (i=1) is just an initialization
         end
         
         % Solve the projected problem with Tikhonov or TSVD
-        [f, alpha] = feval(solverhandle, Ub, diag(Sb), Vb, vector, options, B, beta, V, m, Q);
+        [f, alpha] = feval(solverhandle, Ub, diag(Sb), Vb, vector, options, B, beta, QV, m);
         %[f, alpha] = feval(solverhandle, Ub, diag(Sb), Vb, vector, options);
         Alpha(i-1) = alpha;
         
@@ -217,12 +217,14 @@ for i = 1:maxiter+1 %Iteration (i=1) is just an initialization
           %%-------- If GCV curve is flat, we stop -----------------------
           if abs((GCV(i-1)-GCV(i-2)))/GCV(regstart-1) < degflat
             %             x_out = V*f; % Return the solution at (i-1)st iteration
-            x_out = Q*(V*f); % Return the solution at (i-1)st iteration
+%             x_out = Q*(V*f); % Return the solution at (i-1)st iteration
+            x_out = QV*f; % Return the solution at (i-1)st iteration
             
             if notrue %Set all the output parameters and return
               if outputparams
                 output.U = U;
                 output.V = V;
+                output.QV = QV;
                 output.B = B;
                 output.GCVstop = GCV(:);
                 output.iterations = i-1;
@@ -260,6 +262,7 @@ for i = 1:maxiter+1 %Iteration (i=1) is just an initialization
                 if outputparams
                   output.U = U;
                   output.V = V;
+                  output.QV = QV;
                   output.B = B;
                   output.GCVstop = GCV(:);
                   output.iterations = iterations_save;
@@ -299,7 +302,8 @@ for i = 1:maxiter+1 %Iteration (i=1) is just an initialization
             if GCV(i-2) < GCV(i-1) %Potential minimum reached.
               warning = 1;
               % Save data just in case.
-              x_save = Q*(V*f);
+%               x_save = Q*(V*f);
+              x_save = QV*f;
               iterations_save = i-1;
               alpha_save = alpha;
             end
@@ -312,7 +316,8 @@ for i = 1:maxiter+1 %Iteration (i=1) is just an initialization
       otherwise
         error('genHyBR error: No inner solver!')
     end
-    x = Q*(V*f);
+%     x = Q*(V*f);
+    x = QV*f;
     r = b(:) - A*x(:);
     normr = norm(r(:));
     if outputparams
@@ -336,6 +341,7 @@ for i = 1:maxiter+1 %Iteration (i=1) is just an initialization
         if outputparams
           output.U = U;
           output.V = V;
+          output.QV = QV;
           output.B = B;
           output.GCVstop = GCV(:);
           output.iterations = i-1;
@@ -365,7 +371,8 @@ for i = 1:maxiter+1 %Iteration (i=1) is just an initialization
     end
   else
     f = B \ vector;
-    x = Q*(V*f);
+%     x = Q*(V*f);
+    x = QV*f;
     if outputparams
       if ~notrue
         output.Enrm(i,1) = norm(x(:)-x_true(:))/nrmtrue;
@@ -395,6 +402,7 @@ end
 if outputparams
   output.U = U;
   output.V = V;
+  output.QV = QV;
   output.B = B;
   output.GCVstop = GCV(:);
   if output.alpha == 0

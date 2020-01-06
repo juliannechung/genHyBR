@@ -1,6 +1,6 @@
-function [U, B, V] = genGKB(A, Q, R, U, B, V, options)
+function [U, B, V, QV] = genGKB(A, Q, R, U, B, V, QV, options)
 %
-%     [U, B, V] = genGKB(A, Q, R, U, B, V, options)
+%     [U, B, V, QV] = genGKB(A, Q, R, U, B, V, QV, options)
 %
 %  Perform one step of generalized Golub-Kahan bidiagonalization.
 %
@@ -9,11 +9,13 @@ function [U, B, V] = genGKB(A, Q, R, U, B, V, options)
 %       Q, R - covariance matrices
 %       U, V - accumulation of vectors
 %          B - bidiagonal matrix
+%         QV - accumulation of Qv vectors
 %    options - structure from HyBR (see HyBRset)
 %
 % Output:
 %       U, V - updated "orthogonal" matrix
 %          B - updated bidiagonal matrix
+%         QV - matrix of vectors Q*v_j (used for sampling)
 %
 %  Refs:
 %   Arioli. "Generalized Golub-Kahan bidiagonalization and stopping
@@ -21,7 +23,7 @@ function [U, B, V] = genGKB(A, Q, R, U, B, V, options)
 %   Chung and Saibaba. "Generalized Hybrid Iterative Methods for 
 %       Large-Scale Bayesian Inverse Problems", submitted 2016
 %
-%   J.Chung and A.Saibaba, 2017
+%   J.Chung and A.Saibaba, 2016
 
 % Determine if we need to do reorthogonalization or not.
 reorth = strcmp(HyBR_lsmrget(options,'Reorth'), {'on'});
@@ -43,8 +45,8 @@ if reorth % Need reorthogonalization
   end
   alpha = normM(v,Q);
   v = v / alpha;
-  temp = Q*v;
-  u = A*temp - alpha*U(:,k);
+  Qv = Q*v;
+  u = A*Qv - alpha*U(:,k);
   
   % Reorthogonalize U
   for j = 1:k
@@ -63,8 +65,8 @@ else % Do not need reorthogonalization, save on storage
   end
   alpha = normM(v,Q);
   v = v / alpha;
-  temp = Q*v;
-  u = A*temp - alpha*U(:);
+  Qv = Q*v;
+  u = A*Qv - alpha*U(:);
   
   beta = normM(u, @(x)R\x);
   u = u / beta;
@@ -74,6 +76,9 @@ end
 V = [V, v];
 B = [B, [zeros(k-1,1); alpha]; [zeros(1,k-1), beta]];
 
+if nargout > 3
+  QV = [QV, Qv];
+end
 end
 
 

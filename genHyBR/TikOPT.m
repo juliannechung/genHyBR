@@ -1,6 +1,6 @@
-function ERR = TikOPT(lambda, V, bhat, s, V_lbd, xtrue, Q)
+function ERR = TikOPT(lambda, V, bhat, s, V_gk, xtrue)
 %
-%    ERR = TikOPT(lambda, V, bhat, s, V_lbd, xtrue)
+%    ERR = TikOPT(lambda, V, bhat, s, V_gk, xtrue)
 %
 %  This function evaluates the error function for Tikhonov
 %  regularization.  
@@ -9,7 +9,7 @@ function ERR = TikOPT(lambda, V, bhat, s, V_lbd, xtrue, Q)
 %               V - singular vectors of subproblem
 %            bhat -  vector U'*b, where U = left singular vectors
 %               s -  vector containing the singular values
-%           V_lbd - basis vectors from GK bidiagonalization
+%            V_gk - Golub-Kahan basis vectors (vectors multiplied with Q for gen-HyBR)
 %           xtrue - true image
 %
 %  Output:  ERR = ||xtrue - V*y_k|| where y_k is the Tikhonov solution to
@@ -22,9 +22,5 @@ bhat = conj(s) .* bhat(1:length(s));
 xhat = bhat ./ D;
 y = V * xhat;
 p = 2;
-if isa(Q,'function_handle')
-  ERR = norm(xtrue(:) - Q(V_lbd*y), p);
-else
-  ERR = norm(xtrue(:) - Q*(V_lbd*y), p);
-end
+ERR = norm(xtrue(:) - V_gk*y, p);
 

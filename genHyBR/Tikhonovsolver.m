@@ -1,6 +1,6 @@
-function [x, alpha] = Tikhonovsolver(U, S, V, b, options, B, beta, V_gk, m, Q)
+function [x, alpha] = Tikhonovsolver(U, S, V, b, options, B, beta, V_gk, m)
 %
-%         [x, alpha] = Tikhonovsolver(U, S, V, b, options, V_gk, m, Q)
+%         [x, alpha] = Tikhonovsolver(U, S, V, b, options, B, beta, V_gk, m)
 %
 %  This function computes a Tikhonov regularized LS solution to the
 %  PROJECTED problem, using the identity matrix as the regularization operator.
@@ -25,19 +25,14 @@ function [x, alpha] = Tikhonovsolver(U, S, V, b, options, B, beta, V_gk, m, Q)
 %                 This vector is needed to compute the optimal parameter.
 %          B - bidiagonal matrix
 %       beta - norm of original rhs
-%       V_gk - Golub-Kahan basis vectors
+%       V_gk - Golub-Kahan basis vectors (vectors multiplied with Q for gen-HyBR)
 %          m - size of original problem
-%          Q - covariance matrix (for gen-HyBR)
 %
 %  Output:
 %           x - Tikhonov solution
 %       alpha - regularization parameter
 %
 % J.Chung and J. Nagy 3/2007
-
-if nargin < 10
-  Q = 1;
-end
 
 bhat = U'*b;
 bhat = bhat(:);
@@ -63,7 +58,7 @@ switch alpha
     
   case 'optimal'
     x_true = HyBRget(options,'x_true',[],'fast');
-    errhan = @(lambda)TikOPT(lambda, V, bhat, S, V_gk,x_true, Q);
+    errhan = @(lambda)TikOPT(lambda, V, bhat, S, V_gk, x_true);
     options.TolX = eps;
     alpha = fminbnd(errhan, 0, S(1), options);
     

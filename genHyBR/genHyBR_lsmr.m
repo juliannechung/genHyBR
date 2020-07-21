@@ -185,13 +185,13 @@ switch solver
     solverhandle = @Tikhonovsolver;
 end
 %% Main Code Begins Here
-B = []; V = []; GCV = []; Omega= []; x_out = []; Alpha = [];
+B = []; V = []; QV = []; GCV = []; Omega= []; x_out = []; Alpha = [];
 alphakp1 = []; vkp1=[];
 insolve = 'none'; terminate = 1; warning = 0; norma = 0; normr = beta;
 h = waitbar(0, 'Beginning iterations: please wait ...');
 
 for i = 1:maxiter+1 %Iteration (i=1) is just an initialization
-  [U, B, V, alphakp1, vkp1] = feval(GKhandle, A, Q, R, U, B, V, options, alphakp1, vkp1);
+    [U, B, V, QV, alphakp1, vkp1] = feval(GKhandle, A, Q, R, U, B, V, QV, options, alphakp1, vkp1);
 
   betabar1 = beta*B(1,1);
   vector = (betabar1*eye(size(B,2)+1,1));
@@ -214,8 +214,7 @@ for i = 1:maxiter+1 %Iteration (i=1) is just an initialization
         end
         
         % Solve the projected problem with Tikhonov or TSVD
-        [f, alpha] = feval(solverhandle, Ub, diag(Sb), Vb, vector, options, B, beta, V, m, Q);
-        
+        [f, alpha] = feval(solverhandle, Ub, diag(Sb), Vb, vector, options, B, beta, QV, m);
         Alpha(i-1) = alpha;
         
         % Compute the GCV value used to find the stopping criteria

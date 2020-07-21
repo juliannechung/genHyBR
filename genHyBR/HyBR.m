@@ -207,8 +207,7 @@ for i = 1:maxiter+1 %Iteration (i=1) is just an initialization
         end
         
         % Solve the projected problem with Tikhonov or TSVD
-       [f, alpha] = feval(solverhandle, Ub, diag(Sb), Vb, vector, options, B, beta, V);
-       %[f, alpha] = feval(solverhandle, Ub, diag(Sb), Vb, vector, options);
+       [f, alpha] = feval(solverhandle, Ub, diag(Sb), Vb, vector, options, B, beta, V, m);
         Alpha(i-1) = alpha;
        
         % Compute the GCV value used to find the stopping criteria   

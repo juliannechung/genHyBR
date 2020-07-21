@@ -1,13 +1,13 @@
-function [U, B, V, alpha, v] = genGKB_lsmr(A, Q, R, U, B, V, options, alpha, v)
+function [U, B, V, QV, alpha, v] = genGKB_lsmr(A, Q, R, U, B, V, QV, options, alpha, v)
 %
-%     [U, B, V, alpha, v] = genGKB_lsmr(A, Q, R, U, B, V, options, alpha, v)
+%     [U, B, V, QV, alpha, v] = genGKB_lsmr(A, Q, R, U, B, V, QV, options, alpha, v)
 %
 %  Perform one step of generalized Golub-Kahan bidiagonalization for LSMR.
 %
 % Input:
 %          A - matrix
 %       Q, R - covariance matrices
-%       U, V - accumulation of vectors
+%   U, V, QV - accumulation of vectors
 %          B - bidiagonal matrix
 %    options - structure from HyBR (see HyBRset)
 %     alpha, v - additional pieces for LSMR
@@ -15,7 +15,8 @@ function [U, B, V, alpha, v] = genGKB_lsmr(A, Q, R, U, B, V, options, alpha, v)
 % Output:
 %       U, V - updated "orthogonal" matrix
 %          B - updated bidiagonal matrix
-%     alpha, v - additional pieces for LSMR
+%   alpha, v - additional pieces for LSMR
+%         QV - matrix of vectors Q*v_j
 %
 %  Refs:
 %
@@ -34,8 +35,8 @@ if reorth % Need reorthogonalization
     v = v / alpha;
   end
   
-  temp = Q*v;
-  u = A*temp - alpha*U(:,k);
+  Qv = Q*v;
+  u = A*Qv - alpha*U(:,k);
   
   % Reorthogonalize U
   for j = 1:k
@@ -68,8 +69,8 @@ else % Do not need reorthogonalization, save on storage
     alpha = normM(v,Q);
     v = v / alpha;
   end
-  temp = Q*v;
-  u = A*temp - alpha*U(:);
+  Qv = Q*v;
+  u = A*Qv - alpha*U(:);
   
   beta = normM(u, @(x)R\x);
   u = u / beta;
@@ -86,6 +87,7 @@ else % Do not need reorthogonalization, save on storage
   
 end
 
+QV = [QV, Qv];
 
 end
 

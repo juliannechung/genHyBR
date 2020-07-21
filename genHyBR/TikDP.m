@@ -34,7 +34,6 @@ for i = 1:length(lambda)
   x = V * xhat;
   
   res = vector - B*x;
-%   DP(i) = abs(norm(res)^2- tau * (nLevel^2));
   DP(i) = abs(norm(res)^2- tau * (sigma^2)*N);
 end
 

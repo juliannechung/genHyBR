@@ -5,14 +5,18 @@ classdef funMat
   %       matrix-vector and matrix-transpose-vector multiplications
   %
   %  The funMat class has inputs:
-  %     Afun  - matvec function handle
-  %     Atfun - transpose function handle
-  %     Asize - size of the matrix
+  %     Afun  - matvec function handle (required)
+  %     Atfun - transpose function handle (required)
+  %     Asize - size of the matrix (required)
+  %     Ainvfun - inverse function handle (optional)
+  %     Atinvfun - transpose inverse function handle (optional)
   %
   %   and is based on a structure with the following fields:
   %     Afun
   %     Atfun
   %     Asize
+  %     Ainvfun
+  %     Atinvfun
   %     transpose - indicates if the matrix has been transposed
   %
   %  Calling Syntax:
@@ -20,6 +24,8 @@ classdef funMat
   %    P = funMat    (returns object with empty fields)
   %    P = funMat(funMat) (returns funMat)
   %    P = funMat(Afun, Atfun)
+  %    P = funMat(Afun, Atfun, Asize)
+  %    P = funMat(Afun, Atfun, Asize, Ainvfun, Atinvfun)
   %
   % J. Chung, 3/4/2016
   
@@ -27,6 +33,8 @@ classdef funMat
     Afun
     Atfun
     Asize
+    Ainvfun
+    Atinvfun
     transpose
   end
   
@@ -37,6 +45,8 @@ classdef funMat
           P.transpose = false;
           P.Afun = [];
           P.Atfun = [];
+          P.Ainvfun = [];
+          P.Atinvfun = [];
         case 1
           if isa(varargin{1}, 'funMat')
             P = varargin{1};
@@ -45,10 +55,16 @@ classdef funMat
           end
         otherwise
           P.transpose = false;
-          if nargin == 3
+          if nargin >= 3
             P.Afun = varargin{1};
             P.Atfun = varargin{2};
             P.Asize = varargin{3};
+            if nargin >= 4
+              P.Ainvfun = varargin{4};
+            end
+            if nargin == 5
+              P.Atinvfun = varargin{5};
+            end
           else
             error('Incorrect number of input arguments')
           end
@@ -122,6 +138,47 @@ classdef funMat
         error('Multiplication is not implemented.')
       end
     end
+    
+    function y = mldivide(arg1, arg2) % Overload matrix inverse       
+      if arg1.transpose 
+        if isempty(arg1.Atinvfun)
+          error('Need to specify a transpose inverse function handle.')
+        end
+      else
+        if isempty(arg1.Ainvfun)
+          error('Need to specify an inverse function handle.')
+        end
+      end
+      if isa(arg1,'funMat') && isa(arg2,'double')
+        %   Implement A\s and A'\s for funMat object A.
+        if isscalar(arg2)
+          error('mldivide does not work for scalars yet')
+        elseif isvector(arg2)          
+          if arg1.transpose 
+            % Matrix transpose inverse times vector
+            y = arg1.Atinvfun(arg2);
+          else
+            % Matrix inverse times vector
+            y = arg1.Ainvfun(arg2);
+          end
+        elseif ismatrix(arg2)
+          if arg1.transpose 
+            % Matrix inverse times each column of the matrix: A' \ M
+            for i = 1:size(arg2,2)
+              y(:,i) = arg1.Atinvfun(arg2(:,i));
+            end
+          else
+            % Matrix times each column of the matrix A \M
+            for i = 1:size(arg2,2)
+              y(:,i) = arg1.Ainvfun(arg2(:,i));
+            end
+          end
+        end
+      else
+        error('mldivide is not implemented for this case.')
+      end
+    end
+    
     
     function varargout = size(A, dim) % Overload size
       d = A.Asize;
